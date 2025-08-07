@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
 import { Order } from './order.entity';
+import { InventoryService } from './inventory.service';
+import { PaymentGateway } from './payment.gateway';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
@@ -19,6 +23,6 @@ import { Order } from './order.entity';
     TypeOrmModule.forFeature([Order]),
   ],
   controllers: [OrderController],
-  providers: [OrderService],
+  providers: [OrderService, InventoryService, PaymentGateway],
 })
 export class AppModule {}

@@ -1,50 +1,47 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from './order.entity';
+import { InventoryService } from './inventory.service';
+import { PaymentGateway } from './payment.gateway';
 
 @Injectable()
 export class OrderService {
   constructor(
     @InjectRepository(Order)
     private ordersRepository: Repository<Order>,
+    private eventEmitter: EventEmitter2,
+    private inventoryService: InventoryService,
+    private paymentGateway: PaymentGateway,
   ) {}
 
-  async checkout(orderId: string): Promise<Order> {
+  async processPayment(orderId: string, paymentData: any) {
     const order = await this.ordersRepository.findOneBy({ id: orderId });
-    order.status = OrderStatus.PENDING;
-    return this.ordersRepository.save(order);
+
+    try {
+      const result = await this.paymentGateway.charge(
+        order.total,
+        paymentData
+      );
+
+      if (result.success) {
+        await this.transitionStatus(orderId, OrderStatus.PAID);
+        await this.inventoryService.adjustInventory(order.items, 'decrement');
+        this.eventEmitter.emit('order.paid', order);
+      } else {
+        await this.transitionStatus(orderId, OrderStatus.FAILED);
+        this.eventEmitter.emit('order.failed', { order, error: 'Payment failed' });
+      }
+    } catch (error) {
+      await this.transitionStatus(orderId, OrderStatus.FAILED);
+      this.eventEmitter.emit('order.failed', { order, error });
+    }
   }
 
-  async paymentSuccess(orderId: string): Promise<Order> {
+  async transitionStatus(orderId: string, status: OrderStatus): Promise<Order> {
     const order = await this.ordersRepository.findOneBy({ id: orderId });
-    order.status = OrderStatus.PAID;
-    return this.ordersRepository.save(order);
-  }
-
-  async paymentFailed(orderId: string): Promise<Order> {
-    const order = await this.ordersRepository.findOneBy({ id: orderId });
-    order.status = OrderStatus.FAILED;
-    return this.ordersRepository.save(order);
-  }
-
-  async shipItems(orderId: string, items: any[]): Promise<Order> {
-    const order = await this.ordersRepository.findOneBy({ id: orderId });
-    // In a real application, you would check if all items are shipped
-    order.status = OrderStatus.FULFILLED;
-    return this.ordersRepository.save(order);
-  }
-
-  async shipRemaining(orderId: string, items: any[]): Promise<Order> {
-    const order = await this.ordersRepository.findOneBy({ id: orderId });
-    // In a real application, you would check if all items are shipped
-    order.status = OrderStatus.FULFILLED;
-    return this.ordersRepository.save(order);
-  }
-
-  async complete(orderId: string): Promise<Order> {
-    const order = await this.ordersRepository.findOneBy({ id: orderId });
-    order.status = OrderStatus.COMPLETED;
+    order.status = status;
     return this.ordersRepository.save(order);
   }
 }
