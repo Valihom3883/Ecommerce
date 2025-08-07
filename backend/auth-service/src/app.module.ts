@@ -5,10 +5,11 @@ import { AuthController } from './auth.controller';
 import { TenantAuthService } from './tenant-auth.service';
 import { TenantMiddleware } from './middleware/tenant.middleware';
 import { TenantService } from './tenant/tenant.service';
+import { TenantsController } from './tenant/tenants.controller';
 
 @Module({
   imports: [],
-  controllers: [AppController, AuthController],
+  controllers: [AppController, AuthController, TenantsController],
   providers: [AppService, TenantAuthService, TenantService],
 })
 export class AppModule implements NestModule {
