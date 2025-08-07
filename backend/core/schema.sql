@@ -1,21 +1,23 @@
--- File: backend/core/schema.sql
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE tenants (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    tier VARCHAR(50) CHECK (tier IN ('basic','pro','enterprise'))
+    subdomain VARCHAR(63) UNIQUE NOT NULL,
+    tier VARCHAR(20) NOT NULL CHECK (tier IN ('basic', 'pro', 'enterprise')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE products (
-    id UUID PRIMARY KEY,
-    tenant_id UUID REFERENCES tenants(id),
-    sku VARCHAR(100) NOT NULL,
-    price DECIMAL(10,2) CHECK (price > 0),
-    inventory_count INT DEFAULT 0
+CREATE TABLE tenant_configs (
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    theme JSONB DEFAULT '{"primary_color": "#3b82f6"}',
+    payment_gateways VARCHAR(50)[] DEFAULT ARRAY['stripe'],
+    max_products INT NOT NULL DEFAULT 100,
+    max_staff INT NOT NULL DEFAULT 3
 );
 
-CREATE TABLE orders (
-    id UUID PRIMARY KEY,
-    tenant_id UUID REFERENCES tenants(id),
-    total DECIMAL(12,2) NOT NULL,
-    status VARCHAR(20) CHECK (status IN ('pending','paid','shipped'))
-);
+-- Row-level security for all tenant-specific tables
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation_policy ON products
+    USING (tenant_id = current_setting('app.current_tenant')::UUID);
