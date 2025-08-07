@@ -1,0 +1,2 @@
+class StripeAdapter
+end
