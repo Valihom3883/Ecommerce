@@ -1,0 +1,22 @@
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: ecommerce-core
+
+  DatabaseShard1:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      MultiAZ: true
+      StorageType: gp3
+      AllocatedStorage: 100
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      Origins:
+        - DomainName: !GetAtt LoadBalancer.DNSName
+      DefaultCacheBehavior:
+        TargetOriginId: storefront-origin
+        ViewerProtocolPolicy: redirect-to-https
