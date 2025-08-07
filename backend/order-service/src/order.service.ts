@@ -44,4 +44,18 @@ export class OrderService {
     order.status = status;
     return this.ordersRepository.save(order);
   }
+
+  async create(createOrderDto: { customer_email: string; line_items: any[]; payment_token: string }): Promise<Order> {
+    // In a real application, you would calculate the total based on the line items
+    const total = 100;
+    const order = this.ordersRepository.create({
+      tenant_id: 'fashionhub', // This would come from the tenant context
+      items: createOrderDto.line_items,
+      total,
+      status: OrderStatus.PENDING,
+    });
+    await this.ordersRepository.save(order);
+    await this.processPayment(order.id, createOrderDto.payment_token);
+    return order;
+  }
 }

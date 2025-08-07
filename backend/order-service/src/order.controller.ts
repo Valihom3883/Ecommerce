@@ -5,6 +5,11 @@ import { OrderService } from './order.service';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @Post()
+  create(@Body() createOrderDto: { customer_email: string; line_items: any[]; payment_token: string }) {
+    return this.orderService.create(createOrderDto);
+  }
+
   @Post(':id/checkout')
   checkout(@Param('id') id: string) {
     return this.orderService.checkout(id);
