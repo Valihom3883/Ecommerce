@@ -1,0 +1,2 @@
+class PayPalAdapter
+end
