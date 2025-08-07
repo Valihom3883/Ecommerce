@@ -1,0 +1,19 @@
+{
+  "name": "ts-payment-service",
+  "version": "1.0.0",
+  "description": "TypeScript-based payment service",
+  "main": "dist/payment.adapter.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.2",
+    "@types/jest": "^27.0.3",
+    "jest": "^27.4.3",
+    "ts-jest": "^27.1.1"
+  },
+  "dependencies": {
+    "stripe": "^8.195.0"
+  }
+}
